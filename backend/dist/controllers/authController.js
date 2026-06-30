@@ -4,7 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getMe = exports.logout = exports.login = exports.register = void 0;
-const bcrypt_1 = __importDefault(require("bcrypt"));
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const db_1 = __importDefault(require("../config/db"));
 const jwt_1 = require("../utils/jwt");
 const errors_1 = require("../utils/errors");
@@ -25,7 +25,7 @@ const register = async (req, res, next) => {
         if (existingUser) {
             throw new errors_1.AppError('Email address is already registered', 400);
         }
-        const hashedPassword = await bcrypt_1.default.hash(password, 10);
+        const hashedPassword = await bcryptjs_1.default.hash(password, 10);
         // Default avatar placeholder (e.g., initial letter)
         const avatar = fullName.charAt(0).toUpperCase();
         const user = await db_1.default.user.create({
@@ -67,7 +67,7 @@ const login = async (req, res, next) => {
         if (!user) {
             throw new errors_1.AppError('Invalid email or password', 401);
         }
-        const isMatch = await bcrypt_1.default.compare(password, user.password);
+        const isMatch = await bcryptjs_1.default.compare(password, user.password);
         if (!isMatch) {
             throw new errors_1.AppError('Invalid email or password', 401);
         }

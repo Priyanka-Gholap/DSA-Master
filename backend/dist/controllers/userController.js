@@ -4,7 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.changePassword = exports.updateProfile = void 0;
-const bcrypt_1 = __importDefault(require("bcrypt"));
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const db_1 = __importDefault(require("../config/db"));
 const errors_1 = require("../utils/errors");
 const updateProfile = async (req, res, next) => {
@@ -67,11 +67,11 @@ const changePassword = async (req, res, next) => {
         if (!user) {
             throw new errors_1.AppError('User not found', 404);
         }
-        const isMatch = await bcrypt_1.default.compare(currentPassword, user.password);
+        const isMatch = await bcryptjs_1.default.compare(currentPassword, user.password);
         if (!isMatch) {
             throw new errors_1.AppError('Current password is incorrect', 400);
         }
-        const hashedNewPassword = await bcrypt_1.default.hash(newPassword, 10);
+        const hashedNewPassword = await bcryptjs_1.default.hash(newPassword, 10);
         await db_1.default.user.update({
             where: { id: userId },
             data: { password: hashedNewPassword },
