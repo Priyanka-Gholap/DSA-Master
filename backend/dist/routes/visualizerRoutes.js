@@ -1,0 +1,13 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const visualizerController_1 = require("../controllers/visualizerController");
+const authMiddleware_1 = require("../middleware/authMiddleware");
+const router = (0, express_1.Router)();
+router.use(authMiddleware_1.protect);
+router.get('/preferences', visualizerController_1.getPreferences);
+router.put('/preferences', visualizerController_1.updatePreferences);
+router.get('/favorites', visualizerController_1.getFavorites);
+router.post('/favorites', visualizerController_1.addFavorite);
+router.delete('/favorites/:name', visualizerController_1.removeFavorite);
+exports.default = router;
