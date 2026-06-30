@@ -42,25 +42,7 @@ graph TD
 
 ## 🔒 Environment Variables Configuration
 
-Create a `.env` file inside `backend/` directory:
-
-```env
-# Database URI Connection
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/dsamaster?schema=public"
-
-# Express Port Config
-PORT=5000
-
-# Client connection
-FRONTEND_URL="http://localhost:5173"
-
-# JSON Web Token Secret
-JWT_SECRET="dsa_master_super_secret_production_key_2026"
-JWT_EXPIRES_IN="7d"
-
-# Mode
-NODE_ENV="production"
-```
+Create a `.env` file inside your `backend/` directory utilizing your local development variables. When deploying to the cloud, configure these environment keys directly inside your hosting provider's dashboard consoles (e.g. Render and Vercel) instead of putting them in files pushed to version control.
 
 ---
 

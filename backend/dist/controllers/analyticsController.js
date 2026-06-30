@@ -93,19 +93,19 @@ const getAnalyticsSummary = async (req, res, next) => {
             orderBy: { createdAt: 'desc' },
         });
         const { currentStreak, longestStreak } = calculateStreaks(activities);
-        // Dynamic Mock/Derive Hours: Lessons = 0.5hr each, Revisions = 0.2hr each, Code Submissions = 0.1hr each
+        // Calculate actual hours: Lessons = 0.5hr each, Revisions = 0.2hr each, Code Submissions = 0.1hr each
         const totalStudyHours = parseFloat((completedLessons * 0.5 + completedRevisions * 0.2 + submissionsCount * 0.1).toFixed(1));
         res.status(200).json({
             status: 'success',
             data: {
                 summary: {
-                    totalStudyHours: totalStudyHours || 2.5, // fallback if new user
+                    totalStudyHours: totalStudyHours,
                     problemsSolved: solvedProblems,
                     lessonsCompleted: completedLessons,
                     topicsCompleted: completedTopics,
                     revisionSessions: completedRevisions,
                     notesCreated,
-                    codeExecutions: submissionsCount * 2 + 5, // executions (dry-run + submit)
+                    codeExecutions: submissionsCount * 2,
                     successfulSubmissions,
                     currentStreak,
                     longestStreak: Math.max(longestStreak, currentStreak),
@@ -158,17 +158,51 @@ const getAnalyticsCharts = async (req, res, next) => {
             { name: 'Compilation Error', value: outcomesCount.COMPILATION_ERROR },
             { name: 'Runtime Error', value: outcomesCount.RUNTIME_ERROR },
         ];
-        // 3. Weekly Study time (Reading vs Practice vs Revision in minutes)
-        // We group by day of week for the last 7 days
-        const studyHoursData = [
-            { day: 'Mon', Reading: 20, Practice: 30, Revision: 10 },
-            { day: 'Tue', Reading: 15, Practice: 40, Revision: 15 },
-            { day: 'Wed', Reading: 45, Practice: 20, Revision: 5 },
-            { day: 'Thu', Reading: 30, Practice: 50, Revision: 20 },
-            { day: 'Fri', Reading: 10, Practice: 15, Revision: 30 },
-            { day: 'Sat', Reading: 60, Practice: 90, Revision: 25 },
-            { day: 'Sun', Reading: 40, Practice: 45, Revision: 15 },
-        ];
+        // 3. Weekly Study time (Reading vs Practice vs Revision in minutes) calculated dynamically
+        // Get last 7 days date strings in local time prefix
+        const last7Days = Array.from({ length: 7 }, (_, i) => {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            return d.toISOString().slice(0, 10);
+        }).reverse();
+        const weeklyActivities = await db_1.default.activity.findMany({
+            where: {
+                userId,
+                createdAt: {
+                    gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+                },
+            },
+        });
+        const activitiesByDay = {};
+        last7Days.forEach((dayStr) => {
+            activitiesByDay[dayStr] = { Reading: 0, Practice: 0, Revision: 0 };
+        });
+        weeklyActivities.forEach((act) => {
+            const dayStr = act.createdAt.toISOString().slice(0, 10);
+            if (dayStr in activitiesByDay) {
+                if (act.activityType === 'LESSON_COMPLETED') {
+                    activitiesByDay[dayStr].Reading += 30; // 30 minutes
+                }
+                else if (act.activityType === 'PROBLEM_SOLVED') {
+                    activitiesByDay[dayStr].Practice += 45; // 45 minutes
+                }
+                else if (act.activityType === 'REVISION_COMPLETED') {
+                    activitiesByDay[dayStr].Revision += 15; // 15 minutes
+                }
+            }
+        });
+        const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const studyHoursData = last7Days.map((dayStr) => {
+            const date = new Date(dayStr);
+            const dayName = daysOfWeek[date.getDay()];
+            const metrics = activitiesByDay[dayStr];
+            return {
+                day: dayName,
+                Reading: metrics.Reading,
+                Practice: metrics.Practice,
+                Revision: metrics.Revision,
+            };
+        });
         res.status(200).json({
             status: 'success',
             data: {
