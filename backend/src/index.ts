@@ -31,15 +31,35 @@ app.use((_req, res, next) => {
 // Rate limiting for API requests
 app.use('/api', rateLimiter);
 
+// Allowed origins list
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://dsa-master-phi.vercel.app',
+  FRONTEND_URL
+];
+
 // CORS configuration for supporting credentials (cookies)
 app.use(
   cors({
-    origin: FRONTEND_URL,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, postman, curl)
+      if (!origin) return callback(null, true);
+      
+      const isAllowed = allowedOrigins.includes(origin) || origin.endsWith('.vercel.app');
+      
+      if (isAllowed) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
+
+
 
 // Built-in body parsers
 app.use(express.json({ limit: '1mb' }));
